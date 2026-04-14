@@ -1,0 +1,16 @@
+.terraform*
+terraform*
+node_modules
+dist
+coverage
+*.log
+*.env
+*.tfstate
+*.tfstate.backup
+.terraformrc
+terraform.tfvars
+terraform.tfvars.json
+*.tfvars
+*.tfvars.json
+.idea/
+.vscode/            

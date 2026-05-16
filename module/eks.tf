@@ -6,12 +6,11 @@ resource "aws_eks_cluster" "eks" {
   version  = var.cluster-version
 
   vpc_config {
-    subnet_ids              = [aws_subnet.private-subnet[0].id, aws_subnet.private-subnet[1].id, aws_subnet.private-subnet[2].id]
+    subnet_ids              = aws_subnet.private-subnet[*].id
     endpoint_private_access = var.endpoint-private-access
     endpoint_public_access  = var.endpoint-public-access
     security_group_ids      = [aws_security_group.eks-cluster-sg.id]
   }
-
 
   access_config {
     authentication_mode                         = "CONFIG_MAP"
@@ -31,7 +30,6 @@ resource "aws_iam_openid_connect_provider" "eks-oidc" {
   url             = data.tls_certificate.eks-certificate.url
 }
 
-
 # AddOns for EKS Cluster
 resource "aws_eks_addon" "eks-addons" {
   for_each      = { for idx, addon in var.addons : idx => addon }
@@ -45,8 +43,9 @@ resource "aws_eks_addon" "eks-addons" {
   ]
 }
 
-# NodeGroups
+# ON-DEMAND NODE GROUP
 resource "aws_eks_node_group" "ondemand-node" {
+
   cluster_name    = aws_eks_cluster.eks[0].name
   node_group_name = "${var.cluster-name}-on-demand-nodes"
 
@@ -58,10 +57,11 @@ resource "aws_eks_node_group" "ondemand-node" {
     max_size     = var.max_capacity_on_demand
   }
 
-  subnet_ids = [aws_subnet.private-subnet[0].id, aws_subnet.private-subnet[1].id, aws_subnet.private-subnet[2].id]
+  subnet_ids = aws_subnet.private-subnet[*].id
 
   instance_types = var.ondemand_instance_types
   capacity_type  = "ON_DEMAND"
+
   labels = {
     type = "ondemand"
   }
@@ -69,18 +69,17 @@ resource "aws_eks_node_group" "ondemand-node" {
   update_config {
     max_unavailable = 1
   }
+
   tags = {
-    "Name" = "${var.cluster-name}-ondemand-nodes"
-  }
-  tags_all = {
-    "kubernetes.io/cluster/${var.cluster-name}" = "owned"
-    "Name" = "${var.cluster-name}-ondemand-nodes"
+    Name = "${var.cluster-name}-ondemand-nodes"
   }
 
   depends_on = [aws_eks_cluster.eks]
 }
 
+# SPOT NODE GROUP
 resource "aws_eks_node_group" "spot-node" {
+
   cluster_name    = aws_eks_cluster.eks[0].name
   node_group_name = "${var.cluster-name}-spot-nodes"
 
@@ -92,7 +91,7 @@ resource "aws_eks_node_group" "spot-node" {
     max_size     = var.max_capacity_spot
   }
 
-  subnet_ids = [aws_subnet.private-subnet[0].id, aws_subnet.private-subnet[1].id, aws_subnet.private-subnet[2].id]
+  subnet_ids = aws_subnet.private-subnet[*].id
 
   instance_types = var.spot_instance_types
   capacity_type  = "SPOT"
@@ -100,18 +99,17 @@ resource "aws_eks_node_group" "spot-node" {
   update_config {
     max_unavailable = 1
   }
-  tags = {
-    "Name" = "${var.cluster-name}-spot-nodes"
-  }
-  tags_all = {
-    "kubernetes.io/cluster/${var.cluster-name}" = "owned"
-    "Name" = "${var.cluster-name}-ondemand-nodes"
-  }
+
   labels = {
     type      = "spot"
     lifecycle = "spot"
   }
+
   disk_size = 50
+
+  tags = {
+    Name = "${var.cluster-name}-spot-nodes"
+  }
 
   depends_on = [aws_eks_cluster.eks]
 }

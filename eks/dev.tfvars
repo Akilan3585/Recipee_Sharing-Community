@@ -42,4 +42,14 @@ desired_capacity_spot = 1
 min_capacity_spot = 1
 max_capacity_spot = 2
 
-addons = ["coredns", "kube-proxy", "vpc-cni"]
+addons = [
+  {
+    name = "coredns"
+  },
+  {
+    name = "kube-proxy"
+  },
+  {
+    name = "vpc-cni"
+  }
+]
